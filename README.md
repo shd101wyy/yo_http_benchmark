@@ -55,7 +55,7 @@ bash benchmark.sh 30s 100 4
 
 ```bash
 # Yo
-./yo-out/aarch64-macos/bin/yo_http_benchmark
+./yo-out/*/bin/yo_http_benchmark
 
 # Bun
 bun run server_bun.ts

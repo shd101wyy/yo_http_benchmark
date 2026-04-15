@@ -59,14 +59,12 @@ cd "$(dirname "$0")"
 "$YO_CLI" build 2>&1 | tail -3
 echo ""
 
-# Detect platform for binary path
-case "$(uname -s)-$(uname -m)" in
-  Darwin-arm64) YO_BIN="./yo-out/aarch64-macos/bin/yo_http_benchmark" ;;
-  Darwin-x86_64) YO_BIN="./yo-out/x86_64-macos/bin/yo_http_benchmark" ;;
-  Linux-x86_64) YO_BIN="./yo-out/x86_64-linux/bin/yo_http_benchmark" ;;
-  Linux-aarch64) YO_BIN="./yo-out/aarch64-linux/bin/yo_http_benchmark" ;;
-  *) echo "Unsupported platform: $(uname -s)-$(uname -m)"; exit 1 ;;
-esac
+# Detect binary path (use glob to handle any target triple)
+YO_BIN=$(ls ./yo-out/*/bin/yo_http_benchmark 2>/dev/null | head -1)
+if [ -z "$YO_BIN" ]; then
+  echo "ERROR: Yo binary not found in yo-out/*/bin/"
+  exit 1
+fi
 
 echo "--- Benchmarking: Yo ---"
 "$YO_BIN" &
