@@ -1,0 +1,50 @@
+name: HTTP Benchmark
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y liburing-dev wrk clang
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Yo compiler
+        run: bun install -g @shd101wyy/yo
+
+      - name: Build Yo server
+        run: yo build
+
+      - name: Run benchmark
+        run: |
+          chmod +x benchmark.sh
+          bash benchmark.sh 30s 100 4 | tee benchmark_output.txt
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            benchmark_results.txt
+            benchmark_output.txt

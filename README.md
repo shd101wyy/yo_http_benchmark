@@ -2,7 +2,7 @@
 
 Minimal "Hello, World!" HTTP server benchmark comparing throughput across four runtimes.
 
-## Results (macOS, Apple Silicon M4 Pro, 30s, 100 connections, 4 threads)
+## Results (macOS, Apple Silicon M4, 30s, 100 connections, 4 threads)
 
 | Runtime  | Requests/sec | Relative |
 |----------|-------------|----------|
