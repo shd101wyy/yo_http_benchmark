@@ -9,6 +9,8 @@
     bun.enable = true;
   };
 
+  languages.deno.enable = true;
+
   packages = with pkgs; [
     bash # GNU Bourne-Again Shell
     clang
