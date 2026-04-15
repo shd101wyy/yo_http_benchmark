@@ -1,0 +1,11 @@
+# Build output
+yo-out/
+
+# Generated files
+*.o
+a.out
+a.out.c
+
+# OS files
+.DS_Store
+Thumbs.db
