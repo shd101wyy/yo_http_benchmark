@@ -24,29 +24,31 @@ On Apple Silicon, Yo's single-threaded event loop already saturates `kqueue` loo
 
 ### Linux, GitHub Actions ubuntu-latest (30s, 100 connections, 4 threads)
 
-| Runtime        | Requests/sec | Avg Latency | Relative |
-|----------------|-------------:|------------:|---------:|
-| Rust (hyper)   | 174,683      | 0.56ms      | 1.34×    |
-| **Yo**         | **130,203**  | **0.77ms**  | **1.00×** |
-| Go (net/http)  | 111,758      | 1.17ms      | 0.86×    |
-| Bun            | 108,521      | 0.92ms      | 0.83×    |
-| Deno           | 83,489       | 1.21ms      | 0.64×    |
-| Node.js        | 53,181       | 2.16ms      | 0.41×    |
+| Runtime                 | Requests/sec | Avg Latency | Relative |
+|-------------------------|-------------:|------------:|---------:|
+| **Yo (multi-threaded)** | **260,819**  | **0.50ms**  | **1.00×** |
+| Rust (hyper)            | 197,542      | 0.50ms      | 0.76×    |
+| Yo (single)             | 155,125      | 16.40ms     | 0.59×    |
+| Go (net/http)           | 116,872      | 1.27ms      | 0.45×    |
+| Bun                     | 112,768      | 0.88ms      | 0.43×    |
+| Deno                    | 85,831       | 1.18ms      | 0.33×    |
+| Node.js                 | 47,806       | 2.39ms      | 0.18×    |
 
-On Linux CI, Rust leads because `tokio` uses a **multi-threaded runtime** (all CPU cores) with `io_uring`. Yo's event loop is currently **single-threaded**, but still beats Go, Bun, Deno, and Node.js.
+On Linux CI, Yo's multi-threaded variant takes the top spot — **32% faster than Rust+hyper** (which uses `tokio`'s multi-thread runtime with `io_uring`), **125% faster than Go**, and **445% faster than Node.js**. With multi-threading, Yo's per-core `io_uring` event loops saturate more CPU than a single-loop can, reaching a combined throughput that outpaces every other runtime in this benchmark. Latency is also best-in-class at 500μs (matching Rust).
 
 ### macOS, GitHub Actions macos-latest / Apple Silicon (30s, 100 connections, 4 threads)
 
-| Runtime        | Requests/sec | Avg Latency | Relative |
-|----------------|-------------:|------------:|---------:|
-| **Yo**         | **137,805**  | **1.00ms**  | **1.00×** |
-| Rust (hyper)   | 114,363      | 1.25ms      | 0.83×    |
-| Bun            | 88,942       | 1.28ms      | 0.65×    |
-| Go (net/http)  | 80,337       | 2.01ms      | 0.58×    |
-| Deno           | 78,935       | 1.52ms      | 0.57×    |
-| Node.js        | 53,304       | 2.03ms      | 0.39×    |
+| Runtime                 | Requests/sec | Avg Latency | Relative |
+|-------------------------|-------------:|------------:|---------:|
+| **Rust (hyper)**        | **159,943**  | **1.85ms**  | **1.03×** |
+| **Yo (single)**         | **156,075**  | **0.88ms**  | **1.00×** |
+| Bun                     | 117,458      | 1.01ms      | 0.75×    |
+| Deno                    | 107,409      | 1.02ms      | 0.69×    |
+| Yo (multi-threaded)     | 103,674      | 1.08ms      | 0.66×    |
+| Go (net/http)           | 101,820      | 2.13ms      | 0.65×    |
+| Node.js                 | 72,448       | 1.46ms      | 0.46×    |
 
-On macOS CI (Apple Silicon), Yo leads — **20% faster than Rust+hyper**, **55% faster than Bun**, and **158% faster than Node.js**. Rust's multi-thread advantage is less pronounced here since the CI runner allocates a constrained core budget.
+On macOS CI (Apple Silicon), Yo's single-threaded event loop is effectively tied with Rust+hyper (156k vs 160k) while **cutting average latency in half** (0.88ms vs 1.85ms). The multi-threaded Yo variant is actually slower on macOS CI — the `kqueue` loopback stack saturates before extra threads can help, and the CI runner's constrained core budget adds contention overhead. Yo's single-threaded mode beats Bun by 33%, Deno by 45%, Go by 53%, and Node.js by 115%.
 
 ## How it works
 
