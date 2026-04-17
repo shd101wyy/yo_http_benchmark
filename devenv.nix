@@ -13,6 +13,8 @@
 
   languages.go.enable = true;
 
+  languages.rust.enable = true;
+
   packages = with pkgs; [
     bash # GNU Bourne-Again Shell
     clang
