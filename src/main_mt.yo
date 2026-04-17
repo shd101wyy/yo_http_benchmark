@@ -1,0 +1,115 @@
+// Yo HTTP benchmark server — multi-threaded variant.
+// Each worker thread creates its own SO_REUSEPORT socket; the kernel
+// load-balances incoming connections across all threads.
+
+IO_tcp :: import "std/sys/tcp";
+{
+  AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR, SO_REUSEPORT,
+  IPPROTO_TCP, TCP_NODELAY
+} :: import "std/sys/socket";
+{ GlobalAllocator } :: import "std/allocator";
+{ malloc, free } :: GlobalAllocator;
+{ Exception } :: import "std/error";
+{ printf } :: import "std/libc/stdio";
+Worker :: import "std/worker";
+{ get_hardware_threads } :: import "std/thread";
+
+PORT :: u16(3000);
+BACKLOG :: i32(4096);
+BUF_SIZE :: usize(4096);
+
+RESPONSE :: "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 13\r\nConnection: keep-alive\r\n\r\nHello, World!";
+RESPONSE_LEN :: usize(102);
+
+handle_client :: (fn(fd: i32, using(io : IO, exn : Exception)) ->
+  Impl(Future(unit, IO, Exception))
+)(
+  io.async((using(io : IO, exn : Exception)) => {
+    val := i32(1);
+    val_ptr := &val;
+    io.await(IO_tcp.setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, *(u8)(val_ptr), u32(4)));
+
+    buf := *(u8)(malloc(BUF_SIZE).unwrap());
+
+    done := false;
+    while runtime(!(done)), {
+      n := io.await(IO_tcp.recv(fd, buf, BUF_SIZE, i32(0)));
+      cond((n <= i32(0)) => { done = true; }, true => ());
+      cond(
+        (!(done)) => {
+          io.await(IO_tcp.send(fd, *(u8)(RESPONSE), RESPONSE_LEN, i32(0)));
+        },
+        true => ()
+      );
+    };
+
+    free(.Some(*(void)(buf)));
+    io.await(IO_tcp.close(fd));
+  })
+);
+
+// Server accept loop. Each call creates its own SO_REUSEPORT socket and
+// never returns. Safe to run concurrently on multiple threads.
+run_server :: (fn(using(io : IO)) -> unit)({
+  given(exn) := Exception(throw : ((err) -> {
+    printf("Server error\n");
+    escape ();
+  }));
+
+  raw_fd := io.await(IO_tcp.socket(AF_INET, SOCK_STREAM, i32(0)));
+  cond(
+    (raw_fd < i32(0)) => { printf("Failed to create socket\n"); return (); },
+    true => ()
+  );
+
+  reuse_val := i32(1);
+  reuse_ptr := &reuse_val;
+  io.await(IO_tcp.setsockopt(raw_fd, SOL_SOCKET, SO_REUSEADDR, *(u8)(reuse_ptr), u32(4)));
+  io.await(IO_tcp.setsockopt(raw_fd, SOL_SOCKET, SO_REUSEPORT, *(u8)(reuse_ptr), u32(4)));
+
+  saddr := IO_tcp.make_sockaddr_in_any(PORT);
+  bind_result := io.await(IO_tcp.bind(raw_fd, saddr.buf, saddr.len));
+  IO_tcp.free_sockaddr(saddr);
+  cond(
+    (bind_result < i32(0)) => { printf("Failed to bind\n"); return (); },
+    true => ()
+  );
+
+  listen_result := io.await(IO_tcp.listen(raw_fd, BACKLOG));
+  cond(
+    (listen_result < i32(0)) => { printf("Failed to listen\n"); return (); },
+    true => ()
+  );
+
+  addr_buf := *(u8)(malloc(usize(128)).unwrap());
+  addr_len_ptr := *(u32)(malloc(usize(4)).unwrap());
+
+  while runtime(true), {
+    addr_len_ptr.* = u32(128);
+    client_fd := io.await(IO_tcp.accept(raw_fd, addr_buf, addr_len_ptr));
+    cond(
+      (client_fd >= i32(0)) => {
+        task := handle_client(client_fd, using(io, exn));
+        io.spawn(task, using(io, exn));
+      },
+      true => ()
+    );
+  };
+});
+
+main :: (fn(using(io : IO)) -> unit)({
+  num_threads := get_hardware_threads();
+  Worker.set_num_threads(num_threads);
+  printf("Yo HTTP server (multi-threaded, %zu threads) listening on port 3000\n", num_threads);
+
+  // Spawn N-1 workers; run the Nth on the main thread.
+  i := usize(0);
+  while runtime((i < (num_threads - usize(1)))), {
+    Worker.spawn((using(io)) => run_server(using(io)));
+    i = (i + usize(1));
+  };
+
+  run_server(using(io));
+});
+
+export main;

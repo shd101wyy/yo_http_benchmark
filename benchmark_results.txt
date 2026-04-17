@@ -1,60 +1,70 @@
 === Yo ===
-Running 10s test @ http://127.0.0.1:3000/
-  4 threads and 100 connections
+Running 5s test @ http://127.0.0.1:3000/
+  8 threads and 256 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   311.04us   47.67us   2.01ms   87.97%
-    Req/Sec    77.33k     2.63k   81.24k    92.33%
-  3108588 requests in 10.10s, 302.39MB read
-Requests/sec: 307776.66
-Transfer/sec:     29.94MB
+    Latency     0.93ms  103.97us   5.59ms   92.89%
+    Req/Sec    33.42k     1.63k   35.83k    88.00%
+  1329779 requests in 5.00s, 129.35MB read
+Requests/sec: 265889.49
+Transfer/sec:     25.86MB
+
+=== Yo (multi-threaded) ===
+Running 5s test @ http://127.0.0.1:3000/
+  8 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     0.91ms   93.81us   5.24ms   92.62%
+    Req/Sec    33.99k     1.47k   36.75k    89.46%
+  1380110 requests in 5.10s, 134.25MB read
+Requests/sec: 270503.35
+Transfer/sec:     26.31MB
 
 === Bun ===
-Running 10s test @ http://127.0.0.1:3000/
-  4 threads and 100 connections
+Running 5s test @ http://127.0.0.1:3000/
+  8 threads and 256 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   344.10us   78.58us   2.59ms   94.69%
-    Req/Sec    72.47k     2.92k   76.40k    81.44%
-  2913498 requests in 10.10s, 358.43MB read
-Requests/sec: 288453.35
-Transfer/sec:     35.49MB
+    Latency     1.06ms  168.67us   5.51ms   96.47%
+    Req/Sec    30.14k     1.33k   31.34k    95.10%
+  1223212 requests in 5.10s, 150.48MB read
+Requests/sec: 239769.99
+Transfer/sec:     29.50MB
 
 === Deno ===
-Running 10s test @ http://127.0.0.1:3000/
-  4 threads and 100 connections
+Running 5s test @ http://127.0.0.1:3000/
+  8 threads and 256 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   421.02us   80.85us   4.59ms   99.17%
-    Req/Sec    58.71k     2.22k   60.42k    97.03%
-  2360011 requests in 10.10s, 342.10MB read
-Requests/sec: 233670.98
-Transfer/sec:     33.87MB
+    Latency     1.07ms   83.41us   4.37ms   90.52%
+    Req/Sec    29.75k     1.20k   31.63k    93.14%
+  1207935 requests in 5.10s, 175.10MB read
+Requests/sec: 236794.42
+Transfer/sec:     34.33MB
 
 === Node.js ===
-Running 10s test @ http://127.0.0.1:3000/
-  4 threads and 100 connections
+Running 5s test @ http://127.0.0.1:3000/
+  8 threads and 256 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   812.76us    1.55ms  69.37ms   99.71%
-    Req/Sec    33.68k     1.54k   35.36k    96.29%
-  1353750 requests in 10.10s, 209.15MB read
-Requests/sec: 134023.15
-Transfer/sec:     20.71MB
+    Latency     2.87ms    9.42ms 191.13ms   98.52%
+    Req/Sec    16.89k     1.32k   18.96k    94.36%
+  685580 requests in 5.10s, 105.92MB read
+Requests/sec: 134377.07
+Transfer/sec:     20.76MB
 
 === Go ===
-Running 10s test @ http://127.0.0.1:3000/
-  4 threads and 100 connections
+Running 5s test @ http://127.0.0.1:3000/
+  8 threads and 256 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   397.44us  316.61us   5.77ms   85.28%
-    Req/Sec    52.89k     5.51k   78.35k    73.45%
-  2120916 requests in 10.10s, 232.61MB read
-Requests/sec: 209986.69
-Transfer/sec:     23.03MB
+    Latency     1.26ms    1.48ms  29.48ms   87.57%
+    Req/Sec    27.12k     8.51k   61.99k    67.25%
+  1085348 requests in 5.05s, 119.03MB read
+Requests/sec: 215118.82
+Transfer/sec:     23.59MB
 
 === Rust (hyper) ===
-Running 10s test @ http://127.0.0.1:3000/
-  4 threads and 100 connections
+Running 5s test @ http://127.0.0.1:3000/
+  8 threads and 256 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   367.49us  101.30us   2.76ms   76.90%
-    Req/Sec    55.98k     2.72k   78.07k    92.31%
-  2244956 requests in 10.10s, 246.21MB read
-Requests/sec: 222276.39
-Transfer/sec:     24.38MB
+    Latency     0.91ms  495.92us  10.20ms   74.09%
+    Req/Sec    27.08k     4.91k   56.33k    81.68%
+  1089154 requests in 5.10s, 119.45MB read
+Requests/sec: 213368.58
+Transfer/sec:     23.40MB
 

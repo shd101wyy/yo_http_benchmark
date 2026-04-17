@@ -59,12 +59,13 @@ cd "$(dirname "$0")"
 "$YO_CLI" build 2>&1 | tail -3
 echo ""
 
-# Detect binary path (use glob to handle any target triple)
+# Detect binary paths (use glob to handle any target triple)
 YO_BIN=$(ls ./yo-out/*/bin/yo_http_benchmark 2>/dev/null | head -1)
 if [ -z "$YO_BIN" ]; then
   echo "ERROR: Yo binary not found in yo-out/*/bin/"
   exit 1
 fi
+YO_MT_BIN=$(ls ./yo-out/*/bin/yo_http_benchmark_mt 2>/dev/null | head -1)
 
 echo "--- Benchmarking: Yo ---"
 "$YO_BIN" &
@@ -79,6 +80,24 @@ kill $SERVER_PID 2>/dev/null || true
 kill_port
 sleep 0.5
 echo ""
+
+# ── Yo (multi-threaded) ─────────────────────────────────────────────────
+if [ -n "$YO_MT_BIN" ]; then
+  echo "--- Benchmarking: Yo (multi-threaded) ---"
+  kill_port
+  "$YO_MT_BIN" &
+  SERVER_PID=$!
+  wait_for_server
+  echo "  Server ready (PID $SERVER_PID)"
+  echo ""
+  echo "=== Yo (multi-threaded) ===" >> "$RESULTS_FILE"
+  run_wrk | tee -a "$RESULTS_FILE"
+  echo "" >> "$RESULTS_FILE"
+  kill $SERVER_PID 2>/dev/null || true
+  kill_port
+  sleep 0.5
+  echo ""
+fi
 
 # ── Bun ─────────────────────────────────────────────────────────────────
 echo "--- Benchmarking: Bun ---"

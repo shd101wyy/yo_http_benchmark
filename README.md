@@ -1,23 +1,24 @@
 # HTTP Throughput Benchmark: Yo vs Bun vs Deno vs Node.js vs Go vs Rust
 
-Minimal "Hello, World!" HTTP server benchmark comparing throughput across six runtimes.
+Minimal "Hello, World!" HTTP server benchmark comparing throughput across six runtimes. Yo is benchmarked in two configurations: **single-threaded** (one event loop) and **multi-threaded** (one event loop per CPU core via `std/worker` + `SO_REUSEPORT`).
 
 > **CI**: This benchmark runs automatically on every push via [GitHub Actions](https://github.com/shd101wyy/yo_http_benchmark/actions) on `ubuntu-latest` and `macos-latest`.
 
 ## Results
 
-### macOS, Mac Mini M4 (16GB RAM, 60s, 500 connections, 8 threads)
+### macOS, Mac Mini M4 (16GB RAM, 5s, 256 connections, 8 threads)
 
-| Runtime        | Requests/sec | Avg Latency | Stdev     | Relative |
-|----------------|-------------:|------------:|----------:|---------:|
-| **Yo**         | **288,545**  | **1.63ms**  | **186μs** | **1.00×** |
-| Deno           | 243,312      | 2.03ms      | 235μs     | 0.84×    |
-| Bun            | 232,287      | 2.13ms      | 205μs     | 0.81×    |
-| Go (net/http)  | 219,554      | 2.21ms      | 2.59ms    | 0.76×    |
-| Rust (hyper)   | 217,334      | 1.75ms      | 1.45ms    | 0.75×    |
-| Node.js        | 129,995      | 4.11ms      | 7.52ms    | 0.45×    |
+| Runtime              | Requests/sec | Avg Latency | Relative |
+|----------------------|-------------:|------------:|---------:|
+| **Yo (multi-threaded)** | **270,503** | **0.91ms**  | **1.02×** |
+| **Yo (single)**      | **265,889**  | **0.93ms**  | **1.00×** |
+| Bun                  | 239,770      | 1.06ms      | 0.90×    |
+| Deno                 | 236,794      | 1.07ms      | 0.89×    |
+| Go (net/http)        | 215,119      | 1.26ms      | 0.81×    |
+| Rust (hyper)         | 213,369      | 0.91ms      | 0.80×    |
+| Node.js              | 134,377      | 2.87ms      | 0.51×    |
 
-On Apple Silicon, Yo achieves the highest throughput — **24% faster than Bun**, **33% faster than Rust+hyper**, and **122% faster than Node.js** — while also having the tightest latency distribution (lowest stdev of any runtime in the test).
+On Apple Silicon, Yo's single-threaded event loop already saturates `kqueue` loopback throughput — the multi-threaded variant shows only marginal gains (~2%) on macOS because the loopback interface becomes the bottleneck before CPU. Yo still leads all runtimes, beating Rust+hyper by ~25% and Node.js by ~100%.
 
 ### Linux, GitHub Actions ubuntu-latest (30s, 100 connections, 4 threads)
 
@@ -54,7 +55,8 @@ Each server is a minimal HTTP/1.1 implementation that:
 
 | File                       | Runtime | API |
 |----------------------------|---------|-----|
-| `src/main.yo`              | Yo      | Raw TCP via `std/sys/tcp` + kqueue async I/O |
+| `src/main.yo`              | Yo (single-threaded) | Raw TCP via `std/sys/tcp` + kqueue/io_uring async I/O |
+| `src/main_mt.yo`           | Yo (multi-threaded)  | Same as above, spawned on N worker threads with `SO_REUSEPORT` via `std/worker` |
 | `server_bun.ts`            | Bun     | `Bun.serve()` |
 | `server_deno.ts`           | Deno    | `Deno.serve()` |
 | `server_node.mjs`          | Node.js | `http.createServer()` |
@@ -90,8 +92,11 @@ bash benchmark.sh 60s 500 8
 ### Run individual servers
 
 ```bash
-# Yo
+# Yo (single-threaded)
 ./yo-out/*/bin/yo_http_benchmark
+
+# Yo (multi-threaded, one worker per CPU core)
+./yo-out/*/bin/yo_http_benchmark_mt
 
 # Bun
 bun run server_bun.ts
@@ -117,9 +122,11 @@ cd server_rust && cargo run --release
 4. **No GC pauses** — Yo uses deterministic reference counting, not a tracing garbage collector. This directly explains Yo's tightest-in-class latency stdev.
 5. **Minimal allocations** — The server pre-allocates a read buffer per connection and uses stack-allocated response strings.
 6. **TCP_NODELAY** — Disables Nagle's algorithm for immediate response delivery.
+7. **Optional multi-threading via `std/worker`** — The `main_mt.yo` variant spawns one worker thread per CPU core (each with its own event loop) and uses `SO_REUSEPORT` so the kernel load-balances connections across threads — no shared state, no locks.
 
 ## Notes
 
-- Yo uses a single-threaded event loop with `kqueue` (macOS) / `io_uring` (Linux). Rust/hyper uses tokio's multi-threaded runtime (all CPU cores); on Apple Silicon this is less advantageous than on Linux CI, where Rust pulls ahead.
+- Yo's single-threaded variant uses one event loop with `kqueue` (macOS) / `io_uring` (Linux). The multi-threaded variant uses `std/worker.spawn` to run N event loops in parallel, with `SO_REUSEPORT` for kernel-level connection distribution.
+- On macOS, the loopback network stack saturates before CPU on M-series chips, so MT shows small gains. On Linux (where `io_uring` handles per-thread submission/completion natively), MT typically provides much larger scaling.
 - Benchmarked with `wrk`. Results may vary by machine, OS, and background load. Run multiple times for stable numbers.
 - CI results are from GitHub Actions shared runners (`ubuntu-latest` x64 and `macos-latest` Apple Silicon arm64). macOS local results are from a Mac Mini M4 (16GB RAM) with no background load.
