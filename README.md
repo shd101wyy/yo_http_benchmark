@@ -2,18 +2,35 @@
 
 Minimal "Hello, World!" HTTP server benchmark comparing throughput across six runtimes.
 
-## Results (macOS, Apple Silicon, 60s, 500 connections, 8 threads)
+> **CI**: This benchmark runs automatically on every push via [GitHub Actions](https://github.com/shd101wyy/yo_http_benchmark/actions) on `ubuntu-latest`.
 
-| Runtime        | Requests/sec | Avg Latency | Stdev | Relative |
-|----------------|-------------:|------------:|------:|---------:|
+## Results
+
+### macOS, Apple Silicon M-series (60s, 500 connections, 8 threads)
+
+| Runtime        | Requests/sec | Avg Latency | Stdev  | Relative |
+|----------------|-------------:|------------:|-------:|---------:|
 | **Yo**         | **270,800**  | **1.81ms**  | **240μs** | **1.00×** |
-| Bun            | 243,431      | 2.03ms      | 322μs | 0.90×    |
-| Deno           | 235,133      | 2.10ms      | 331μs | 0.87×    |
-| Go (net/http)  | 219,337      | 2.35ms      | 2.87ms| 0.81×    |
-| Rust (hyper)   | 217,469      | 1.83ms      | 1.77ms| 0.80×    |
-| Node.js        | 127,546      | 4.17ms      | 7.26ms| 0.47×    |
+| Bun            | 243,431      | 2.03ms      | 322μs  | 0.90×    |
+| Deno           | 235,133      | 2.10ms      | 331μs  | 0.87×    |
+| Go (net/http)  | 219,337      | 2.35ms      | 2.87ms | 0.81×    |
+| Rust (hyper)   | 217,469      | 1.83ms      | 1.77ms | 0.80×    |
+| Node.js        | 127,546      | 4.17ms      | 7.26ms | 0.47×    |
 
-Yo achieves the highest throughput — **11% faster than Bun**, **24% faster than Rust+hyper**, and **112% faster than Node.js** — while also having the tightest latency distribution (lowest stdev of any runtime in the test).
+On Apple Silicon, Yo achieves the highest throughput — **11% faster than Bun**, **24% faster than Rust+hyper**, and **112% faster than Node.js** — while also having the tightest latency distribution (lowest stdev of any runtime in the test).
+
+### Linux, GitHub Actions ubuntu-latest (30s, 100 connections, 4 threads)
+
+| Runtime        | Requests/sec | Avg Latency | Relative |
+|----------------|-------------:|------------:|---------:|
+| Rust (hyper)   | 131,900      | 0.74ms      | 1.45×    |
+| **Yo**         | **91,242**   | **1.09ms**  | **1.00×** |
+| Go (net/http)  | 79,411       | 1.55ms      | 0.87×    |
+| Bun            | 76,288       | 1.31ms      | 0.84×    |
+| Deno           | 59,078       | 1.70ms      | 0.65×    |
+| Node.js        | 28,777       | 4.15ms      | 0.32×    |
+
+On Linux CI, Rust leads because `tokio` uses a **multi-threaded runtime** (all CPU cores) with `io_uring`. Yo's event loop is currently **single-threaded**, but still beats Go, Bun, Deno, and Node.js. The absolute numbers are lower than macOS due to GitHub's shared runner environment.
 
 ## How it works
 
@@ -90,5 +107,6 @@ cd server_rust && cargo run --release
 
 ## Notes
 
-- Benchmark uses a single-process, single-threaded event loop for each runtime. Rust/hyper uses tokio multi-thread runtime which spreads across CPU cores; despite this, Yo's single-threaded implementation wins on both throughput and tail latency.
+- Yo uses a single-threaded event loop with `kqueue` (macOS) / `io_uring` (Linux). Rust/hyper uses tokio's multi-threaded runtime (all CPU cores); on Apple Silicon this is less advantageous than on Linux CI, where Rust pulls ahead.
 - Benchmarked with `wrk`. Results may vary by machine, OS, and background load. Run multiple times for stable numbers.
+- CI results are from GitHub Actions `ubuntu-latest` shared runners. macOS results are from a dedicated Apple Silicon machine with no background load.
