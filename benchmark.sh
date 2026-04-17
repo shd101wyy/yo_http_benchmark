@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# HTTP throughput benchmark: Yo vs Bun vs Deno vs Node.js vs Go
+# HTTP throughput benchmark: Yo vs Bun vs Deno vs Node.js vs Go vs Rust
 # Uses wrk to measure requests/sec for a "Hello, World!" HTTP server.
 
 DURATION="${1:-10s}"
@@ -172,6 +172,38 @@ else
   echo "  SKIP: go not found"
   echo "=== Go ===" >> "$RESULTS_FILE"
   echo "SKIPPED: go not available" >> "$RESULTS_FILE"
+  echo "" >> "$RESULTS_FILE"
+fi
+echo ""
+
+# ── Rust ────────────────────────────────────────────────────────────────
+echo "--- Benchmarking: Rust ---"
+kill_port
+RUST_BIN="./server_rust/target/release/server_rust"
+if [ ! -x "$RUST_BIN" ]; then
+  echo "  Building Rust server (release)..."
+  if command -v cargo &>/dev/null; then
+    (cd server_rust && cargo build --release 2>&1 | tail -3)
+  elif command -v nix-shell &>/dev/null; then
+    nix-shell -p cargo rustc --run "cd server_rust && cargo build --release" 2>&1 | tail -3
+  fi
+fi
+if [ -x "$RUST_BIN" ]; then
+  "$RUST_BIN" &
+  SERVER_PID=$!
+  wait_for_server
+  echo "  Server ready (PID $SERVER_PID)"
+  echo ""
+  echo "=== Rust (hyper) ===" >> "$RESULTS_FILE"
+  run_wrk | tee -a "$RESULTS_FILE"
+  echo "" >> "$RESULTS_FILE"
+  kill $SERVER_PID 2>/dev/null || true
+  kill_port
+  sleep 0.5
+else
+  echo "  SKIP: rust toolchain not found"
+  echo "=== Rust (hyper) ===" >> "$RESULTS_FILE"
+  echo "SKIPPED: cargo not available" >> "$RESULTS_FILE"
   echo "" >> "$RESULTS_FILE"
 fi
 echo ""
