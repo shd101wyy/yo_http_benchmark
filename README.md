@@ -6,19 +6,21 @@ Minimal "Hello, World!" HTTP server benchmark comparing throughput across six ru
 
 ## Results
 
-### macOS, Mac Mini M4 (16GB RAM, 5s, 256 connections, 8 threads)
+### macOS, Mac Mini M4 (16GB RAM)
 
-| Runtime              | Requests/sec | Avg Latency | Relative |
-|----------------------|-------------:|------------:|---------:|
-| **Yo (multi-threaded)** | **270,503** | **0.91ms**  | **1.02×** |
-| **Yo (single)**      | **265,889**  | **0.93ms**  | **1.00×** |
-| Bun                  | 239,770      | 1.06ms      | 0.90×    |
-| Deno                 | 236,794      | 1.07ms      | 0.89×    |
-| Go (net/http)        | 215,119      | 1.26ms      | 0.81×    |
-| Rust (hyper)         | 213,369      | 0.91ms      | 0.80×    |
-| Node.js              | 134,377      | 2.87ms      | 0.51×    |
+Benchmarked with `bash benchmark.sh 60s 256 8` — 60-second duration, 256 concurrent connections, 8 wrk threads (`wrk -t8 -c256 -d60s http://127.0.0.1:3000/`).
 
-On Apple Silicon, Yo's single-threaded event loop already saturates `kqueue` loopback throughput — the multi-threaded variant shows only marginal gains (~2%) on macOS because the loopback interface becomes the bottleneck before CPU. Yo still leads all runtimes, beating Rust+hyper by ~25% and Node.js by ~100%.
+| Runtime                 | Requests/sec | Avg Latency | Stdev      | Relative |
+|-------------------------|-------------:|------------:|-----------:|---------:|
+| **Yo (multi-threaded)** | **294,183**  | **0.84ms**  | **78μs**   | **1.00×** |
+| **Yo (single)**         | **293,075**  | **0.84ms**  | **79μs**   | **1.00×** |
+| Bun                     | 254,756      | 1.00ms      | 162μs      | 0.87×    |
+| Deno                    | 247,130      | 1.03ms      | 86μs       | 0.84×    |
+| Go (net/http)           | 217,268      | 1.26ms      | 1.51ms     | 0.74×    |
+| Rust (hyper)            | 213,902      | 0.92ms      | 626μs      | 0.73×    |
+| Node.js                 | 141,362      | 1.88ms      | 2.55ms     | 0.48×    |
+
+On Apple Silicon, Yo's single-threaded event loop already saturates `kqueue` loopback throughput — the multi-threaded variant shows only marginal gains (~0.4%) on macOS because the loopback interface becomes the bottleneck before CPU. Yo still leads all runtimes, beating Bun by ~15%, Rust+hyper by ~37%, and Node.js by ~108% — with the tightest-in-class latency distribution (78–79μs stdev vs 162μs+ for every other runtime).
 
 ### Linux, GitHub Actions ubuntu-latest (30s, 100 connections, 4 threads)
 
