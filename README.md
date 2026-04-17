@@ -6,7 +6,7 @@ Minimal "Hello, World!" HTTP server benchmark comparing throughput across six ru
 
 ## Results
 
-### macOS, Apple Silicon M-series (60s, 500 connections, 8 threads)
+### macOS, Mac Mini M4 (16GB RAM, 60s, 500 connections, 8 threads)
 
 | Runtime        | Requests/sec | Avg Latency | Stdev  | Relative |
 |----------------|-------------:|------------:|-------:|---------:|
@@ -109,4 +109,4 @@ cd server_rust && cargo run --release
 
 - Yo uses a single-threaded event loop with `kqueue` (macOS) / `io_uring` (Linux). Rust/hyper uses tokio's multi-threaded runtime (all CPU cores); on Apple Silicon this is less advantageous than on Linux CI, where Rust pulls ahead.
 - Benchmarked with `wrk`. Results may vary by machine, OS, and background load. Run multiple times for stable numbers.
-- CI results are from GitHub Actions `ubuntu-latest` shared runners. macOS results are from a dedicated Apple Silicon machine with no background load.
+- CI results are from GitHub Actions `ubuntu-latest` shared runners. macOS results are from a Mac Mini M4 (16GB RAM) with no background load.
