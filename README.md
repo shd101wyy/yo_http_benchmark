@@ -8,16 +8,16 @@ Minimal "Hello, World!" HTTP server benchmark comparing throughput across six ru
 
 ### macOS, Mac Mini M4 (16GB RAM, 60s, 500 connections, 8 threads)
 
-| Runtime        | Requests/sec | Avg Latency | Stdev  | Relative |
-|----------------|-------------:|------------:|-------:|---------:|
-| **Yo**         | **270,800**  | **1.81ms**  | **240μs** | **1.00×** |
-| Bun            | 243,431      | 2.03ms      | 322μs  | 0.90×    |
-| Deno           | 235,133      | 2.10ms      | 331μs  | 0.87×    |
-| Go (net/http)  | 219,337      | 2.35ms      | 2.87ms | 0.81×    |
-| Rust (hyper)   | 217,469      | 1.83ms      | 1.77ms | 0.80×    |
-| Node.js        | 127,546      | 4.17ms      | 7.26ms | 0.47×    |
+| Runtime        | Requests/sec | Avg Latency | Stdev     | Relative |
+|----------------|-------------:|------------:|----------:|---------:|
+| **Yo**         | **289,808**  | **1.58ms**  | **125μs** | **1.00×** |
+| Deno           | 245,130      | 2.02ms      | 159μs     | 0.85×    |
+| Bun            | 235,314      | 2.10ms      | 156μs     | 0.81×    |
+| Go (net/http)  | 220,050      | 2.19ms      | 2.52ms    | 0.76×    |
+| Rust (hyper)   | 216,410      | 1.72ms      | 1.20ms    | 0.75×    |
+| Node.js        | 138,315      | 3.81ms      | 6.03ms    | 0.48×    |
 
-On Apple Silicon, Yo achieves the highest throughput — **11% faster than Bun**, **24% faster than Rust+hyper**, and **112% faster than Node.js** — while also having the tightest latency distribution (lowest stdev of any runtime in the test).
+On Apple Silicon, Yo achieves the highest throughput — **23% faster than Bun**, **34% faster than Rust+hyper**, and **109% faster than Node.js** — while also having the tightest latency distribution (lowest stdev of any runtime in the test).
 
 ### Linux, GitHub Actions ubuntu-latest (30s, 100 connections, 4 threads)
 
