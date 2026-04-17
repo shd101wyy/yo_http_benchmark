@@ -8,14 +8,28 @@ on:
 
 jobs:
   benchmark:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: Linux
+          - os: macos-latest
+            name: macOS
+    runs-on: ${{ matrix.os }}
+    name: Benchmark (${{ matrix.name }})
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install system dependencies
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y liburing-dev wrk clang
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install wrk
 
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
@@ -59,7 +73,7 @@ jobs:
       - name: Upload results
         uses: actions/upload-artifact@v4
         with:
-          name: benchmark-results
+          name: benchmark-results-${{ matrix.os }}
           path: |
             benchmark_results.txt
             benchmark_output.txt
