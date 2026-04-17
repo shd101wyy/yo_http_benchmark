@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# HTTP throughput benchmark: Yo vs Bun vs Deno vs Node.js
+# HTTP throughput benchmark: Yo vs Bun vs Deno vs Node.js vs Go
 # Uses wrk to measure requests/sec for a "Hello, World!" HTTP server.
 
 DURATION="${1:-10s}"
@@ -9,21 +9,21 @@ CONNECTIONS="${2:-100}"
 THREADS="${3:-4}"
 PORT=3000
 RESULTS_FILE="benchmark_results.txt"
-YO_CLI="${YO_CLI:-$(command -v yo 2>/dev/null || echo "$HOME/Workspace/Yo/yo-cli")}"
+YO_CLI="${YO_CLI:-$( [ -x "$HOME/Workspace/Yo/yo-cli" ] && echo "$HOME/Workspace/Yo/yo-cli" || command -v yo )}"
 
 echo "=== HTTP Throughput Benchmark ==="
 echo "Duration: $DURATION | Connections: $CONNECTIONS | Threads: $THREADS"
 echo ""
 
 wait_for_server() {
-  local retries=30
-  while ! curl -s "http://127.0.0.1:$PORT/" > /dev/null 2>&1; do
+  local retries="${1:-50}"
+  while ! curl -s --max-time 1 "http://127.0.0.1:$PORT/" > /dev/null 2>&1; do
     retries=$((retries - 1))
     if [ "$retries" -le 0 ]; then
       echo "  ERROR: Server failed to start"
       return 1
     fi
-    sleep 0.1
+    sleep 0.2
   done
 }
 
@@ -140,6 +140,40 @@ echo "" >> "$RESULTS_FILE"
 kill $SERVER_PID 2>/dev/null || true
 kill_port
 sleep 0.5
+echo ""
+
+# ── Go ───────────────────────────────────────────────────────────────────
+echo "--- Benchmarking: Go ---"
+kill_port
+if command -v go &>/dev/null; then
+  GO_CMD="go"
+elif command -v nix-shell &>/dev/null; then
+  GO_CMD="nix-shell -p go --run go"
+else
+  GO_CMD=""
+fi
+if [ -n "$GO_CMD" ]; then
+  if command -v go &>/dev/null; then
+    go run server_go.go &
+  else
+    nix-shell -p go --run "go run server_go.go" &
+  fi
+  SERVER_PID=$!
+  wait_for_server 200
+  echo "  Server ready (PID $SERVER_PID)"
+  echo ""
+  echo "=== Go ===" >> "$RESULTS_FILE"
+  run_wrk | tee -a "$RESULTS_FILE"
+  echo "" >> "$RESULTS_FILE"
+  kill $SERVER_PID 2>/dev/null || true
+  kill_port
+  sleep 0.5
+else
+  echo "  SKIP: go not found"
+  echo "=== Go ===" >> "$RESULTS_FILE"
+  echo "SKIPPED: go not available" >> "$RESULTS_FILE"
+  echo "" >> "$RESULTS_FILE"
+fi
 echo ""
 
 # ── Summary ─────────────────────────────────────────────────────────────

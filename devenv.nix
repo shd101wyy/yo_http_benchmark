@@ -19,6 +19,7 @@
     gdb
     pkg-config
     emscripten
+    wrk # HTTP benchmarking tool
   ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
     liburing
   ];

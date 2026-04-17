@@ -3,7 +3,11 @@ build :: import "std/build";
 
 mod :: build.module({ name: "yo_http_benchmark", root: "./src/lib.yo" });
 
-exe :: build.executable({ name: "yo_http_benchmark", root: "./src/main.yo" });
+exe :: build.executable({ 
+  name: "yo_http_benchmark",
+  root: "./src/main.yo",
+  optimize: build.Optimize.ReleaseFast
+});
 exe.add_import_list(imports);
 
 lib :: build.static_library({ name: "yo_http_benchmark-lib", root: "./src/lib.yo" });

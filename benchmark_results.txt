@@ -2,39 +2,49 @@
 Running 30s test @ http://127.0.0.1:3000/
   4 threads and 100 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   536.66us    2.20ms  70.26ms   97.74%
-    Req/Sec    79.01k     8.30k  144.94k    87.54%
-  9465751 requests in 30.10s, 0.90GB read
-Requests/sec: 314449.47
-Transfer/sec:     30.59MB
+    Latency   382.68us  799.18us  24.87ms   97.27%
+    Req/Sec    76.36k     5.35k  105.61k    77.74%
+  9147451 requests in 30.10s, 0.87GB read
+Requests/sec: 303883.02
+Transfer/sec:     29.56MB
 
 === Bun ===
 Running 30s test @ http://127.0.0.1:3000/
   4 threads and 100 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   328.64us   66.08us   2.53ms   94.25%
-    Req/Sec    75.79k     2.78k   80.04k    76.91%
-  9079632 requests in 30.10s, 1.09GB read
-Requests/sec: 301648.21
-Transfer/sec:     37.11MB
+    Latency   346.61us  107.30us   3.03ms   92.69%
+    Req/Sec    72.06k     4.15k   78.53k    82.64%
+  8633676 requests in 30.10s, 1.04GB read
+Requests/sec: 286834.06
+Transfer/sec:     35.29MB
 
 === Deno ===
 Running 30s test @ http://127.0.0.1:3000/
   4 threads and 100 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   379.91us   39.06us   3.25ms   94.57%
-    Req/Sec    64.82k     1.51k   66.75k    96.93%
-  7765053 requests in 30.10s, 1.10GB read
-Requests/sec: 257975.81
-Transfer/sec:     37.40MB
+    Latency   398.82us   90.97us   4.58ms   97.05%
+    Req/Sec    61.94k     3.19k   65.12k    88.62%
+  7420981 requests in 30.10s, 1.05GB read
+Requests/sec: 246542.16
+Transfer/sec:     35.74MB
 
 === Node.js ===
 Running 30s test @ http://127.0.0.1:3000/
   4 threads and 100 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   722.41us  635.61us  58.05ms   99.30%
-    Req/Sec    35.43k     1.09k   37.51k    82.31%
-  4245073 requests in 30.10s, 655.84MB read
-Requests/sec: 141031.02
-Transfer/sec:     21.79MB
+    Latency   742.99us  750.75us  62.65ms   99.42%
+    Req/Sec    34.67k     1.30k   36.87k    85.38%
+  4154208 requests in 30.10s, 641.81MB read
+Requests/sec: 138006.98
+Transfer/sec:     21.32MB
+
+=== Go ===
+Running 30s test @ http://127.0.0.1:3000/
+  4 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   430.46us  421.76us  11.34ms   89.35%
+    Req/Sec    52.36k     5.65k   75.96k    70.42%
+  6252219 requests in 30.01s, 685.70MB read
+Requests/sec: 208347.59
+Transfer/sec:     22.85MB
 
