@@ -9,7 +9,7 @@ CONNECTIONS="${2:-100}"
 THREADS="${3:-4}"
 PORT=3000
 RESULTS_FILE="benchmark_results.txt"
-YO_CLI="${YO_CLI:-$( [ -x "$HOME/Workspace/Yo/yo-cli" ] && echo "$HOME/Workspace/Yo/yo-cli" || command -v yo )}"
+YO_CLI="${YO_CLI:-$(command -v yo)}"
 
 echo "=== HTTP Throughput Benchmark ==="
 echo "Duration: $DURATION | Connections: $CONNECTIONS | Threads: $THREADS"
