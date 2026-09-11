@@ -60,7 +60,9 @@ jobs:
         run: cd server_rust && cargo build --release
 
       - name: Install Yo compiler
-        run: bun install -g @shd101wyy/yo
+        run: |
+          curl -sSL https://shd101wyy.github.io/Yo/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Build Yo server
         run: yo build
