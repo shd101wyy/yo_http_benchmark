@@ -1,16 +1,18 @@
 // Yo HTTP benchmark server — minimal TCP-based HTTP/1.1 server
 // Responds with "Hello, World!" to all requests, supports keep-alive.
 
-IO_tcp :: import "std/sys/tcp";
+IO_tcp :: import("std/sys/tcp");
 {
   AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR,
   IPPROTO_TCP, TCP_NODELAY
-} :: import "std/sys/socket";
-{ GlobalAllocator } :: import "std/allocator";
+} :: import("std/sys/socket");
+{ GlobalAllocator } :: import("std/allocator");
 { malloc, free } :: GlobalAllocator;
-{ Exception } :: import "std/error";
-open import "std/fmt";
-{ printf } :: import "std/libc/stdio";
+{ Exception, IoExn } :: import("std/error");
+import("std/fmt");
+{ printf } :: import("std/libc/stdio");
+
+pragma(Pragma.AllowUnsafe);
 
 PORT :: u16(3000);
 BACKLOG :: i32(4096);
@@ -19,86 +21,87 @@ BUF_SIZE :: usize(4096);
 RESPONSE :: "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 13\r\nConnection: keep-alive\r\n\r\nHello, World!";
 RESPONSE_LEN :: usize(102);
 
-handle_client :: (fn(fd: i32, using(io : IO, exn : Exception)) ->
-  Impl(Future(unit, IO, Exception))
+handle_client :: (fn(fd : i32, io : Io, exn : Exception) ->
+  Impl(Future(unit, IoExn))
 )(
-  io.async((using(io : IO, exn : Exception)) => {
+  io.async(e => {
     // Set TCP_NODELAY to disable Nagle's algorithm
     val := i32(1);
     val_ptr := &val;
-    io.await(IO_tcp.setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, *(u8)(val_ptr), u32(4)));
+    e.io.await(IO_tcp.setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (*u8)(val_ptr), u32(4)), e.io);
 
-    buf := *(u8)(malloc(BUF_SIZE).unwrap());
+    buf := (*u8)(malloc(BUF_SIZE).unwrap());
 
     done := false;
-    while runtime(!(done)), {
+    while(runtime(!(done)), {
       // recv and send are two awaits in a single while body
-      n := io.await(IO_tcp.recv(fd, buf, BUF_SIZE, i32(0)));
+      n := e.io.await(IO_tcp.recv(fd, buf, BUF_SIZE, i32(0)), e.io);
       cond((n <= i32(0)) => { done = true; }, true => ());
       cond(
         (!(done)) => {
-          io.await(IO_tcp.send(fd, *(u8)(RESPONSE), RESPONSE_LEN, i32(0)));
+          e.io.await(IO_tcp.send(fd, (*u8)(RESPONSE), RESPONSE_LEN, i32(0)), e.io);
         },
         true => ()
       );
-    };
+    });
 
-    free(.Some(*(void)(buf)));
-    io.await(IO_tcp.close(fd));
+    free(.Some((*void)(buf)));
+    e.io.await(IO_tcp.close(fd), e.io);
   })
 );
 
-main :: (fn(using(io : IO)) -> unit)({
-  given(exn) := Exception(throw : ((err) -> {
-    printf("Server error\n");
-    escape ();
+main :: (fn(io : Io) -> unit)({
+  exn := Exception(throw : ((err) -> {
+    unsafe(printf("Server error\n"));
+    unwind(());
   }));
+  e := IoExn(io : io, exn : exn);
 
   // Create socket
-  raw_fd := io.await(IO_tcp.socket(AF_INET, SOCK_STREAM, i32(0)));
+  raw_fd := io.await(IO_tcp.socket(AF_INET, SOCK_STREAM, i32(0)), io);
   cond(
-    (raw_fd < i32(0)) => { printf("Failed to create socket\n"); return (); },
+    (raw_fd < i32(0)) => { unsafe(printf("Failed to create socket\n")); return(()); },
     true => ()
   );
 
   // Set SO_REUSEADDR
   reuse_val := i32(1);
   reuse_ptr := &reuse_val;
-  io.await(IO_tcp.setsockopt(raw_fd, SOL_SOCKET, SO_REUSEADDR, *(u8)(reuse_ptr), u32(4)));
+  io.await(IO_tcp.setsockopt(raw_fd, SOL_SOCKET, SO_REUSEADDR, (*u8)(reuse_ptr), u32(4)), io);
 
   // Bind
   saddr := IO_tcp.make_sockaddr_in_any(PORT);
-  bind_result := io.await(IO_tcp.bind(raw_fd, saddr.buf, saddr.len));
+  bind_result := io.await(IO_tcp.bind(raw_fd, saddr.buf, saddr.len), io);
   IO_tcp.free_sockaddr(saddr);
   cond(
-    (bind_result < i32(0)) => { printf("Failed to bind\n"); return (); },
+    (bind_result < i32(0)) => { unsafe(printf("Failed to bind\n")); return(()); },
     true => ()
   );
 
   // Listen
-  listen_result := io.await(IO_tcp.listen(raw_fd, BACKLOG));
+  listen_result := io.await(IO_tcp.listen(raw_fd, BACKLOG), io);
   cond(
-    (listen_result < i32(0)) => { printf("Failed to listen\n"); return (); },
+    (listen_result < i32(0)) => { unsafe(printf("Failed to listen\n")); return(()); },
     true => ()
   );
 
-  printf("Yo HTTP server listening on port 3000\n");
+  unsafe(printf("Yo HTTP server listening on port 3000\n"));
 
   // Accept loop
-  addr_buf := *(u8)(malloc(usize(128)).unwrap());
-  addr_len_ptr := *(u32)(malloc(usize(4)).unwrap());
+  addr_buf := (*u8)(malloc(usize(128)).unwrap());
+  addr_len_ptr := (*u32)(malloc(usize(4)).unwrap());
 
-  while runtime(true), {
+  while(runtime(true), {
     addr_len_ptr.* = u32(128);
-    client_fd := io.await(IO_tcp.accept(raw_fd, addr_buf, addr_len_ptr));
+    client_fd := io.await(IO_tcp.accept(raw_fd, addr_buf, addr_len_ptr), io);
     cond(
       (client_fd >= i32(0)) => {
-        task := handle_client(client_fd, using(io, exn));
-        io.spawn(task, using(io, exn));
+        task := handle_client(client_fd, io, exn);
+        io.spawn(task, e);
       },
       true => ()
     );
-  };
+  });
 });
 
-export main;
+export(main);

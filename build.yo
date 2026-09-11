@@ -1,5 +1,5 @@
-build :: import "std/build";
-{ imports } :: import "./deps.yo";
+build :: import("std/build");
+{ imports } :: import("./deps.yo");
 
 mod :: build.module({ name: "yo_http_benchmark", root: "./src/lib.yo" });
 
