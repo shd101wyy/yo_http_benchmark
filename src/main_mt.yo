@@ -1,11 +1,15 @@
 // Yo HTTP benchmark server — multi-threaded variant.
 // Each worker thread creates its own SO_REUSEPORT socket; the kernel
 // load-balances incoming connections across all threads.
-
 IO_tcp :: import("std/sys/tcp");
 {
-  AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR, SO_REUSEPORT,
-  IPPROTO_TCP, TCP_NODELAY
+  AF_INET,
+  SOCK_STREAM,
+  SOL_SOCKET,
+  SO_REUSEADDR,
+  SO_REUSEPORT,
+  IPPROTO_TCP,
+  TCP_NODELAY
 } :: import("std/sys/socket");
 { GlobalAllocator } :: import("std/allocator");
 { malloc, free } :: GlobalAllocator;
@@ -15,7 +19,6 @@ IO_tcp :: import("std/sys/tcp");
 pragma(Pragma.AllowUnsafe);
 { ThreadPool, spawn, get_hardware_threads } :: import("std/thread");
 
-
 PORT :: u16(3000);
 BACKLOG :: i32(4096);
 BUF_SIZE :: usize(4096);
@@ -23,8 +26,9 @@ BUF_SIZE :: usize(4096);
 RESPONSE :: "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 13\r\nConnection: keep-alive\r\n\r\nHello, World!";
 RESPONSE_LEN :: usize(102);
 
-handle_client :: (fn(fd : i32, io : Io, exn : Exception) ->
-  Impl(Future(unit, IoExn))
+handle_client :: (
+  fn(fd : i32, io : Io, exn : Exception) ->
+    Impl(Future(unit, IoExn))
 )(
   io.async(e => {
     // Set TCP_NODELAY to disable Nagle's algorithm
@@ -35,11 +39,16 @@ handle_client :: (fn(fd : i32, io : Io, exn : Exception) ->
     buf := (*u8)(malloc(BUF_SIZE).unwrap());
 
     done := false;
-    while(runtime(!(done)), {
+    while(runtime(!done), {
       n := e.io.await(IO_tcp.recv(fd, buf, BUF_SIZE, i32(0)), e.io);
-      cond((n <= i32(0)) => { done = true; }, true => ());
       cond(
-        (!(done)) => {
+        (n <= i32(0)) => {
+          done = true;
+        },
+        true => ()
+      );
+      cond(
+        !done => {
           e.io.await(IO_tcp.send(fd, (*u8)(RESPONSE), RESPONSE_LEN, i32(0)), e.io);
         },
         true => ()
@@ -54,15 +63,22 @@ handle_client :: (fn(fd : i32, io : Io, exn : Exception) ->
 // Server accept loop. Each call creates its own SO_REUSEPORT socket and
 // never returns. Safe to run concurrently on multiple threads.
 run_server :: (fn(io : Io) -> unit)({
-  exn := Exception(throw : ((err) -> {
-    unsafe(printf("Server error\n"));
-    unwind(());
-  }));
+  exn := Exception(
+    throw : (
+      err -> {
+        unsafe(printf("Server error\n"));
+        unwind(());
+      }
+    )
+  );
   e := IoExn(io : io, exn : exn);
 
   raw_fd := io.await(IO_tcp.socket(AF_INET, SOCK_STREAM, i32(0)), io);
   cond(
-    (raw_fd < i32(0)) => { unsafe(printf("Failed to create socket\n")); return(()); },
+    (raw_fd < i32(0)) => {
+      unsafe(printf("Failed to create socket\n"));
+      return(());
+    },
     true => ()
   );
 
@@ -76,13 +92,19 @@ run_server :: (fn(io : Io) -> unit)({
   bind_result := io.await(IO_tcp.bind(raw_fd, saddr.buf, saddr.len), io);
   IO_tcp.free_sockaddr(saddr);
   cond(
-    (bind_result < i32(0)) => { unsafe(printf("Failed to bind\n")); return(()); },
+    (bind_result < i32(0)) => {
+      unsafe(printf("Failed to bind\n"));
+      return(());
+    },
     true => ()
   );
 
   listen_result := io.await(IO_tcp.listen(raw_fd, BACKLOG), io);
   cond(
-    (listen_result < i32(0)) => { unsafe(printf("Failed to listen\n")); return(()); },
+    (listen_result < i32(0)) => {
+      unsafe(printf("Failed to listen\n"));
+      return(());
+    },
     true => ()
   );
 
@@ -109,7 +131,7 @@ main :: (fn(io : Io) -> unit)({
 
   // Spawn N-1 workers; run the Nth on the main thread.
   i := usize(0);
-  while(runtime((i < (num_threads - usize(1)))), {
+  while(runtime(i < (num_threads - usize(1))), {
     spawn(pool, (worker_io : Io) => run_server(worker_io));
     i = (i + usize(1));
   });

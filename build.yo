@@ -1,29 +1,27 @@
 build :: import("std/build");
-{ imports } :: import("./deps.yo");
 
-mod :: build.module({ name: "yo_http_benchmark", root: "./src/lib.yo" });
-
-exe :: build.executable({ 
-  name: "yo_http_benchmark",
-  root: "./src/main.yo",
-  optimize: build.Optimize.ReleaseFast
+// The module root is declared in `yo.toml` `[modules]`; `build.module` only
+// NAMES it now (there is nothing to link here, so it is not even needed —
+// kept out rather than kept as a no-op).
+exe :: build.executable({
+  name : "yo_http_benchmark",
+  root : "./src/main.yo",
+  optimize : build.Optimize.ReleaseFast
 });
-exe.add_import_list(imports);
 
 exe_mt :: build.executable({
-  name: "yo_http_benchmark_mt",
-  root: "./src/main_mt.yo",
-  optimize: build.Optimize.ReleaseFast
+  name : "yo_http_benchmark_mt",
+  root : "./src/main_mt.yo",
+  optimize : build.Optimize.ReleaseFast
 });
-exe_mt.add_import_list(imports);
 
-lib :: build.static_library({ name: "yo_http_benchmark-lib", root: "./src/lib.yo" });
+lib :: build.static_library({ name : "yo_http_benchmark-lib", root : "./src/lib.yo" });
 
-tests :: build.test({ name: "tests", root: "./tests/" });
+tests :: build.test({ name : "tests", root : "./tests/" });
 
 run_exe :: build.run(exe);
 
-docs :: build.doc({ name: "docs", root: "./src" });
+docs :: build.doc({ name : "docs", root : "./src" });
 
 install :: build.step("install", "Build all artifacts");
 install.depend_on(exe);
