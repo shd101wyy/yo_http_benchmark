@@ -1,0 +1,11 @@
+[package]
+name = "yo_http_benchmark"
+version = "0.1.0"
+description = "HTTP server benchmark written in Yo"
+license = "MIT"
+
+[modules]
+# `import("yo_http_benchmark")` — the module root moved here from build.module.
+default = "src/lib.yo"
+
+[dependencies]
